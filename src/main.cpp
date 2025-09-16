@@ -10,6 +10,7 @@
 void WIFI_ini();
 void check_mqttConn();
 bool reconnect();
+void callback(char* topic, byte* payload, unsigned int lenght); //el manejo de datos, es decir, que sean punteros y el tipo en cada caso, son disposiciones de la propia libreria PubSubClient
 const char* mqtt_server = "192.168.1.20";
 const char * broker_user = "dev";
 const char * broker_pass = "";
@@ -34,7 +35,7 @@ void setup() {
     pinMode(led, OUTPUT);
 
     WIFI_ini();
-    
+    client.setCallback(callback); //metodo de la libreria pubsub, funciona igual que un hook. Basicamente establecemos que queremos hacer con los mensajes que llegan al buffer, leidos gracias al metodo .loop
 }
 
 void loop() {
@@ -66,6 +67,24 @@ bool reconnect(){
     return false;
   }
 
+}
+void process_actuators(){
+
+}
+
+void callback(char* topic, byte* payload, unsigned int lenght){
+  String incoming = "";
+
+  for (int i = 0; i < lenght; i++){
+    incoming += (char)payload[i]; //pasamos cada byte, que puntualmente es un codigo ASCII a char
+  };
+
+  incoming.trim(); //metodo de String, recorta principio y final. Para evitar posibvles incoherencias o saltos de linea
+
+  //processIncomingMsg(String(topic), incoming);
+
+  Serial.println(incoming); //temporal, es para probar que funcione
+  Serial.println(String(topic));
 }
 
 void WIFI_ini(){
@@ -111,6 +130,6 @@ void check_mqttConn(){
     }
 
   }else{
-    client.loop(); //metodo para procesar los mensajes mqtt llegados al buffer
+    client.loop(); //metodo observador, ve si hay mensajes en el buffer
   }
 }
