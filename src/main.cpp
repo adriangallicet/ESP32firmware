@@ -11,15 +11,18 @@ void WIFI_ini();
 void check_mqttConn();
 bool reconnect();
 void callback(char* topic, byte* payload, unsigned int lenght); //el manejo de datos, es decir, que sean punteros y el tipo en cada caso, son disposiciones de la propia libreria PubSubClient
+void processIncomingMsg(String topic, String incoming);
+void process_actuators();
+void send_data_broker();
+
+//VARS and library instances
 const char* mqtt_server = "192.168.1.20";
 const char * broker_user = "dev";
 const char * broker_pass = "";
-
 WiFiClient espclient; //instancia del cliente de red
 PubSubClient client(espclient); //declaracion del cliente MQTT e indicamos la conexion
+IoTicosSplitter splitter; // instancia de esta libreria, usada en process_incoming_message para dividir el topico que llega
 long lastReconnAtt = 0;
-
-
 JsonDocument mqtt_data_doc; //JsonDocument palabra reservada por la libreria ArduinoJson// reserva espacio en memoria
 
 //PINS
@@ -45,6 +48,36 @@ void loop() {
 }
 
 // put function definitions here:
+String last_rec_msg = "";
+String last_rec_topic = "";
+
+
+void processIncomingMsg(String topic, String incoming){
+ // last_rec_topic = topic;
+  //last_rec_msg = incoming;
+  String uId = splitter.split(topic, '/', 0);
+  String dId = splitter.split(topic, '/', 1);
+  String hab = splitter.split(topic, '/', 2);
+
+  last_rec_topic = uId + "/" + dId + "/" + hab + "/sdata";
+
+  JsonDocument doc;
+  //transformamos JSON a un doc que maneja la libreria ArduinoJson. Dicho doc es lo que para Javascrypt un objeto.
+  deserializeJson(mqtt_data_doc["last"], incoming);
+  //mqtt_data_doc["last"] = doc;
+
+  serializeJsonPretty(mqtt_data_doc, Serial);
+  process_actuators();
+  send_data_broker();
+
+}
+
+void send_data_broker(){
+  String toSend = "";
+  serializeJson(mqtt_data_doc["last"], toSend);
+  client.publish(last_rec_topic.c_str(), toSend.c_str());
+  mqtt_data_doc["last"]["value"] = "";
+}
 
 bool reconnect(){
   //Set Mqtt sv
@@ -69,7 +102,14 @@ bool reconnect(){
 
 }
 void process_actuators(){
-
+  if (mqtt_data_doc["last"]["value"] == true){
+    digitalWrite(led, HIGH);
+  }
+  else if (mqtt_data_doc["last"]["value"] == false)
+  {
+    digitalWrite(led, LOW);
+  }
+  
 }
 
 void callback(char* topic, byte* payload, unsigned int lenght){
@@ -79,12 +119,10 @@ void callback(char* topic, byte* payload, unsigned int lenght){
     incoming += (char)payload[i]; //pasamos cada byte, que puntualmente es un codigo ASCII a char
   };
 
-  incoming.trim(); //metodo de String, recorta principio y final. Para evitar posibvles incoherencias o saltos de linea
+  incoming.trim(); //metodo de String, recorta principio y final. Para evitar posibles incoherencias o saltos de linea
 
-  //processIncomingMsg(String(topic), incoming);
+  processIncomingMsg(String(topic), incoming);
 
-  Serial.println(incoming); //temporal, es para probar que funcione
-  Serial.println(String(topic));
 }
 
 void WIFI_ini(){
