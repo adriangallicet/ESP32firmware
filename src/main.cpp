@@ -14,8 +14,12 @@ void callback(char* topic, byte* payload, unsigned int lenght); //el manejo de d
 void processIncomingMsg(String topic, String incoming);
 void process_actuators();
 void send_data_broker();
+bool getDeviceCredentials();
 
 //VARS and library instances
+String dId = "7234"; //harcoding
+String _id = "687eac95e37a35affe53f0ea"; //hardcoding
+String webhook_endpoint = "http://192.168.1.20:3001/api/getdevicecredentials"; //endpoint para solicitar la config del dispositivo
 const char* mqtt_server = "192.168.1.20";
 const char * broker_user = "dev";
 const char * broker_pass = "";
@@ -38,6 +42,7 @@ void setup() {
     pinMode(led, OUTPUT);
 
     WIFI_ini();
+    getDeviceCredentials();
     client.setCallback(callback); //metodo de la libreria pubsub, funciona igual que un hook. Basicamente establecemos que queremos hacer con los mensajes que llegan al buffer, leidos gracias al metodo .loop
 }
 
@@ -77,6 +82,37 @@ void send_data_broker(){
   serializeJson(mqtt_data_doc["last"], toSend);
   client.publish(last_rec_topic.c_str(), toSend.c_str());
   mqtt_data_doc["last"]["value"] = "";
+}
+
+bool getDeviceCredentials(){
+  Serial.print("\n\nObteniendo configuraciones del dispositivo desde la plataforma");
+  delay(1000);
+
+  String toSend = "dId=" + dId + "&_id=" + _id;
+
+  HTTPClient http; // declaracion de instancia de la libreria
+  http.begin(webhook_endpoint); //metodo para iniciar cliente
+  http.addHeader("Content-Type", "application/x-www-form-urlencoded"); //headers
+
+  int res_code = http.POST(toSend); //este metodo genera la peticion devuelve el codigo de respuesta HTTP de ella (es decir, 200, 401, etc.)
+
+  if(res_code < 0 ){
+    Serial.print("\n\nError enviando la peticion HTTP POST");
+    http.end(); //cerramos comunicacion
+    return false;
+  }
+  if(res_code != 200){
+    Serial.print("\n\nError en la respuesta" + res_code);
+    http.end(); //cerramos comunicacion
+    return false;
+  }
+
+  if(res_code == 200){
+    String resBody = http.getString(); //este metodo devuelve el body de la respuesta en forma de String
+    Serial.print("\n\n\ndev config obtenidas exitosamente!!!!!!!!!");
+    Serial.print("\n\n" + resBody);
+    delay(2000);
+  }
 }
 
 bool reconnect(){
