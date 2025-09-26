@@ -42,7 +42,6 @@ void setup() {
     pinMode(led, OUTPUT);
 
     WIFI_ini();
-    getDeviceCredentials();
     client.setCallback(callback); //metodo de la libreria pubsub, funciona igual que un hook. Basicamente establecemos que queremos hacer con los mensajes que llegan al buffer, leidos gracias al metodo .loop
 }
 
@@ -110,26 +109,41 @@ bool getDeviceCredentials(){
   if(res_code == 200){
     String resBody = http.getString(); //este metodo devuelve el body de la respuesta en forma de String
     Serial.print("\n\n\ndev config obtenidas exitosamente!!!!!!!!!");
-    Serial.print("\n\n" + resBody);
-    delay(2000);
+    deserializeJson(mqtt_data_doc, resBody);
+    //Serial.print("\n\n" + resBody);
+    http.end();
+    delay(1000);
+    return true;
   }
+
+    return false;
 }
 
 bool reconnect(){
+  //en caso de que haya algun tipo de error obteniendo la config. del device desde backend, espera de 10sec y restart la placa
+  if(!getDeviceCredentials()){
+    Serial.println("RESTART EN 10 SEC");
+    delay(10000);
+    ESP.restart();
+  }
+  //
+
   //Set Mqtt sv
   client.setServer(mqtt_server, 1883);
   Serial.print("\n\n\nIntentando conexion Mqtt");
 
+
+ // String topic = "683a1f9413ca368f47a7b655/687eac95e37a35affe53f0ea/+/actdata";
+  String client_id = String("device_") + dId + "_" + random(1, 9999);
   
-  //const char *str_client_id = client_id.c_str();
-  String topic = "683a1f9413ca368f47a7b655/687eac95e37a35affe53f0ea/+/actdata";
-  String client_id = String("device_") + random(1, 9999);
+  String str_topic = mqtt_data_doc["topic"];
   
+  //Vea que los metodos connect y subscribe esperan array de caracteres, para eso se utiliza el metodo .c_str() nativo de c++
   if(client.connect(client_id.c_str(), broker_user, broker_pass)){
     Serial.print("\n\n\nCliente Mqtt conectado");
     delay(2000); //delay para poder ver el mensaje en monitor serial, necesario?
-    client.subscribe(topic.c_str()); //el metodo espera un char array
-
+    client.subscribe((str_topic + "+/actdata").c_str()); //al lograr conexion, intentamos sub al topico
+    //el back responde algo de la forma: id.user/_id del dispositivo/ ---> 683a1f9413ca368f47a7b655/687eac95e37a35affe53f0ea/ por eso agregamos /actdata"                                    
     return true;
   }else{
     Serial.print("\n\n\nFallo conexion Mqtt");
