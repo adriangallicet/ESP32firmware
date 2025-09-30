@@ -15,6 +15,7 @@ void processIncomingMsg(String topic, String incoming);
 void process_actuators();
 void send_data_broker();
 bool getDeviceCredentials();
+void assignPinsToObjects(int count);
 
 //VARS and library instances
 String dId = "7234"; //harcoding
@@ -32,6 +33,16 @@ JsonDocument mqtt_data_doc; //JsonDocument palabra reservada por la libreria Ard
 //PINS
 #define led 2
 
+const int availablePins[] = { 4, 5, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33 }; //14
+const int NUM_AVAILABLE_PINS = sizeof(availablePins) / sizeof(availablePins[0]);
+
+struct LedControl {
+  int pin;
+  bool state;
+};
+
+LedControl leds[NUM_AVAILABLE_PINS];
+
 //
 
 
@@ -48,12 +59,28 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   check_mqttConn();
+  
+}
 
+void assignPinsToObjects(int count) {
+  if (count > NUM_AVAILABLE_PINS) count = NUM_AVAILABLE_PINS;
+  for (int i = 0; i < count; i++) {
+    leds[i].pin = availablePins[i];
+    leds[i].state = false;
+    pinMode(leds[i].pin, OUTPUT);
+    digitalWrite(leds[i].pin, LOW);
+  }
+  // Limpia los que no se asignan
+  for (int i = count; i < NUM_AVAILABLE_PINS; i++) {
+    leds[i].pin = -1;
+    leds[i].state = false;
+  }
 }
 
 // put function definitions here:
 String last_rec_msg = "";
 String last_rec_topic = "";
+int nroPin;
 
 
 void processIncomingMsg(String topic, String incoming){
@@ -65,11 +92,18 @@ void processIncomingMsg(String topic, String incoming){
 
   last_rec_topic = uId + "/" + dId + "/" + hab + "/sdata";
 
+  for(int i = 0; i < mqtt_data_doc["actuators"].size(); i++){
+    if(mqtt_data_doc["actuators"][i]["id"] == hab){
+      nroPin = i;
+      Serial.print("\n\nla posicion del array es");
+      Serial.print(nroPin);
+    }
+  }
+
   JsonDocument doc;
   //transformamos JSON a un doc que maneja la libreria ArduinoJson. Dicho doc es lo que para Javascrypt un objeto.
   deserializeJson(mqtt_data_doc["last"], incoming);
   //mqtt_data_doc["last"] = doc;
-
   serializeJsonPretty(mqtt_data_doc, Serial);
   process_actuators();
   send_data_broker();
@@ -77,7 +111,11 @@ void processIncomingMsg(String topic, String incoming){
 }
 
 void send_data_broker(){
+
+  String str_root_topic = mqtt_data_doc["topic"];
+  String topic = str_root_topic + "sdata";
   String toSend = "";
+
   serializeJson(mqtt_data_doc["last"], toSend);
   client.publish(last_rec_topic.c_str(), toSend.c_str());
   mqtt_data_doc["last"]["value"] = "";
@@ -110,6 +148,7 @@ bool getDeviceCredentials(){
     String resBody = http.getString(); //este metodo devuelve el body de la respuesta en forma de String
     Serial.print("\n\n\ndev config obtenidas exitosamente!!!!!!!!!");
     deserializeJson(mqtt_data_doc, resBody);
+    assignPinsToObjects(mqtt_data_doc["actuators"].size());
     //Serial.print("\n\n" + resBody);
     http.end();
     delay(1000);
@@ -153,13 +192,12 @@ bool reconnect(){
 }
 void process_actuators(){
   if (mqtt_data_doc["last"]["value"] == true){
-    digitalWrite(led, HIGH);
+    digitalWrite(leds[nroPin].pin, HIGH);
   }
   else if (mqtt_data_doc["last"]["value"] == false)
   {
-    digitalWrite(led, LOW);
+    digitalWrite(leds[nroPin].pin, LOW);
   }
-  
 }
 
 void callback(char* topic, byte* payload, unsigned int lenght){
@@ -175,6 +213,7 @@ void callback(char* topic, byte* payload, unsigned int lenght){
 
 }
 
+ bool res;
 void WIFI_ini(){
   WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
     // it is a good practice to make sure your code sets wifi mode how you want it.
@@ -191,7 +230,7 @@ void WIFI_ini(){
     // if empty will auto generate SSID, if password is blank it will be anonymous AP (wm.autoConnect())
     // then goes into a blocking loop awaiting configuration and will return success result
 
-    bool res;
+   
     // res = wm.autoConnect(); // auto generated AP name from chipid
     // res = wm.autoConnect("AutoConnectAP"); // anonymous ap
     res = wm.autoConnect("AutoConnectAP","password"); // password protected ap
@@ -207,6 +246,12 @@ void WIFI_ini(){
 }
 
 void check_mqttConn(){
+//TESTEAR SI FUNCIONA, VER QUE PASA SI SE CAE LA CON WIFI.
+  if(!res){
+    Serial.print("\n\n\nConexion Wifi fallo, reinicio de dispositivo...");
+    delay(15000);
+    ESP.restart();
+  };
   if(!client.connected()){
     long now = millis(); // tiempo en ms desde que inicio la placa
     if(now - lastReconnAtt > 5000){ //logica para evitar codigo bloqueante con los delay()
