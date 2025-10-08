@@ -36,15 +36,7 @@ JsonDocument mqtt_data_doc; //JsonDocument palabra reservada por la libreria Ard
 const int availablePins[] = { 4, 5, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33 }; //14
 const int NUM_AVAILABLE_PINS = sizeof(availablePins) / sizeof(availablePins[0]);
 
-struct LedControl {
-  int pin;
-  bool state;
-};
-
-LedControl leds[NUM_AVAILABLE_PINS];
-
-//
-
+int leds [NUM_AVAILABLE_PINS];
 
 void setup() {
 
@@ -53,7 +45,10 @@ void setup() {
     pinMode(led, OUTPUT);
 
     WIFI_ini();
-    client.setCallback(callback); //metodo de la libreria pubsub, funciona igual que un hook. Basicamente establecemos que queremos hacer con los mensajes que llegan al buffer, leidos gracias al metodo .loop
+
+    //metodo de la libreria pubsub, funciona igual que un hook. Basicamente establecemos que queremos hacer con los mensajes que llegan al buffer, leidos gracias al metodo .loop
+    client.setCallback(callback);
+    //
 }
 
 void loop() {
@@ -65,15 +60,8 @@ void loop() {
 void assignPinsToObjects(int count) {
   if (count > NUM_AVAILABLE_PINS) count = NUM_AVAILABLE_PINS;
   for (int i = 0; i < count; i++) {
-    leds[i].pin = availablePins[i];
-    leds[i].state = false;
-    pinMode(leds[i].pin, OUTPUT);
-    digitalWrite(leds[i].pin, LOW);
-  }
-  // Limpia los que no se asignan
-  for (int i = count; i < NUM_AVAILABLE_PINS; i++) {
-    leds[i].pin = -1;
-    leds[i].state = false;
+    pinMode(availablePins[i], OUTPUT);
+   digitalWrite(availablePins[i], mqtt_data_doc["actuators"][i]["value"] ? HIGH : LOW);
   }
 }
 
@@ -84,8 +72,7 @@ int nroPin;
 
 
 void processIncomingMsg(String topic, String incoming){
- // last_rec_topic = topic;
-  //last_rec_msg = incoming;
+
   String uId = splitter.split(topic, '/', 0);
   String dId = splitter.split(topic, '/', 1);
   String hab = splitter.split(topic, '/', 2);
@@ -95,15 +82,10 @@ void processIncomingMsg(String topic, String incoming){
   for(int i = 0; i < mqtt_data_doc["actuators"].size(); i++){
     if(mqtt_data_doc["actuators"][i]["id"] == hab){
       nroPin = i;
-      Serial.print("\n\nla posicion del array es");
-      Serial.print(nroPin);
     }
   }
 
-  JsonDocument doc;
-  //transformamos JSON a un doc que maneja la libreria ArduinoJson. Dicho doc es lo que para Javascrypt un objeto.
   deserializeJson(mqtt_data_doc["last"], incoming);
-  //mqtt_data_doc["last"] = doc;
   serializeJsonPretty(mqtt_data_doc, Serial);
   process_actuators();
   send_data_broker();
@@ -191,15 +173,11 @@ bool reconnect(){
 
 }
 void process_actuators(){
-  if (mqtt_data_doc["last"]["value"] == true){
-    digitalWrite(leds[nroPin].pin, HIGH);
-  }
-  else if (mqtt_data_doc["last"]["value"] == false)
-  {
-    digitalWrite(leds[nroPin].pin, LOW);
-  }
+  digitalWrite(availablePins[nroPin], mqtt_data_doc["last"][nroPin]["value"] ? HIGH : LOW);
 }
 
+//--> vea que el tipo de dato son punteros, es decir, el metodo setcallback nos da el espacio de direccion en memoria en el caso de topic y payload
+//payload es un array de bytes, que cada uno representa un codigo ASCII
 void callback(char* topic, byte* payload, unsigned int lenght){
   String incoming = "";
 
@@ -207,7 +185,7 @@ void callback(char* topic, byte* payload, unsigned int lenght){
     incoming += (char)payload[i]; //pasamos cada byte, que puntualmente es un codigo ASCII a char
   };
 
-  incoming.trim(); //metodo de String, recorta principio y final. Para evitar posibles incoherencias o saltos de linea
+  incoming.trim(); //metodo nativo de String, recorta principio y final. Para evitar posibles incoherencias o saltos de linea
 
   processIncomingMsg(String(topic), incoming);
 
