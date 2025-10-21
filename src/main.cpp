@@ -32,8 +32,8 @@ JsonDocument mqtt_data_doc; //JsonDocument palabra reservada por la libreria Ard
 
 //PINS
 #define led 2
-
-const int availablePins[] = { 4, 5, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33 }; //14
+//const int availablePins[] = { 4, 5, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33 }; //14
+const int availablePins[] = { 4, 16, 17, 5, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33 }; //14
 const int NUM_AVAILABLE_PINS = sizeof(availablePins) / sizeof(availablePins[0]);
 
 int leds [NUM_AVAILABLE_PINS];
@@ -61,7 +61,7 @@ void assignPinsToObjects(int count) {
   if (count > NUM_AVAILABLE_PINS) count = NUM_AVAILABLE_PINS;
   for (int i = 0; i < count; i++) {
     pinMode(availablePins[i], OUTPUT);
-   digitalWrite(availablePins[i], mqtt_data_doc["actuators"][i]["value"] ? HIGH : LOW);
+   digitalWrite(availablePins[i], mqtt_data_doc["actuators"][i]["value"] ? LOW : HIGH);
   }
 }
 
@@ -173,7 +173,7 @@ bool reconnect(){
 
 }
 void process_actuators(){
-  digitalWrite(availablePins[nroPin], mqtt_data_doc["last"][nroPin]["value"] ? HIGH : LOW);
+  digitalWrite(availablePins[nroPin], mqtt_data_doc["last"]["value"] ? LOW : HIGH);
 }
 
 //--> vea que el tipo de dato son punteros, es decir, el metodo setcallback nos da el espacio de direccion en memoria en el caso de topic y payload
