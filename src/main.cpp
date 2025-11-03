@@ -16,6 +16,7 @@ void process_actuators();
 void send_data_broker();
 bool getDeviceCredentials();
 void assignPinsToObjects(int count);
+void checkBTN();
 
 //VARS and library instances
 String dId = "7234"; //harcoding
@@ -29,9 +30,27 @@ PubSubClient client(espclient); //declaracion del cliente MQTT e indicamos la co
 IoTicosSplitter splitter; // instancia de esta libreria, usada en process_incoming_message para dividir el topico que llega
 long lastReconnAtt = 0;
 JsonDocument mqtt_data_doc; //JsonDocument palabra reservada por la libreria ArduinoJson// reserva espacio en memoria
+WiFiManager wm;
+
+//////DECLARACIONES USADAS PARA LA FUNCION pressBTN///////////
+// Estado anterior y actual
+bool estadoBotonActual = HIGH;
+bool estadoBotonAnterior = HIGH;
+
+// Tiempo de espera para 5 segundos (en milisegundos)
+const unsigned long tiempoRequerido = 5000;
+
+// Marca si ya ejecutaste el código tras 5 segundos
+bool ejecutado = false;
+
+// Tiempo cuando se detectó la presión inicial
+unsigned long tPresionadoInicio = 0;
+
+/////////////////
 
 //PINS
-#define led 2
+#define botonPin 2
+int timeout = 240;
 //const int availablePins[] = { 4, 5, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33 }; //14
 const int availablePins[] = { 4, 16, 17, 5, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33 }; //14
 const int NUM_AVAILABLE_PINS = sizeof(availablePins) / sizeof(availablePins[0]);
@@ -39,12 +58,10 @@ const int NUM_AVAILABLE_PINS = sizeof(availablePins) / sizeof(availablePins[0]);
 int leds [NUM_AVAILABLE_PINS];
 
 void setup() {
-
     // put your setup code here, to run once:
     Serial.begin(115200);
-    pinMode(led, OUTPUT);
-
-    WIFI_ini();
+    pinMode(botonPin, INPUT_PULLUP);
+   WIFI_ini();
 
     //metodo de la libreria pubsub, funciona igual que un hook. Basicamente establecemos que queremos hacer con los mensajes que llegan al buffer, leidos gracias al metodo .loop
     client.setCallback(callback);
@@ -53,8 +70,43 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+  checkBTN();
   check_mqttConn();
   
+}
+
+void checkBTN(){
+    estadoBotonActual = digitalRead(botonPin);
+
+  // Detectar inicio de presión
+  if (estadoBotonActual == LOW && estadoBotonAnterior == HIGH) {
+    // El botón acaba de empezar a pulsarse
+    tPresionadoInicio = millis();
+    ejecutado = false; // reseteamos bandera para este ciclo de presión
+  }
+
+  // Si está presionado, calcular cuánto tiempo lleva
+  if (estadoBotonActual == LOW) {
+    unsigned long duracion = millis() - tPresionadoInicio;
+    if (!ejecutado && duracion >= tiempoRequerido) {
+      // Aquí va el código que quieres ejecutar al alcanzar 5 segundos
+        Serial.println("Botón presionado 5 segundos. Ejecuto código.");
+        // Borrar credenciales guardadas por WiFiManager.
+        // WiFiManager almacena la configuración en el NVS/LittleFS según la plataforma.
+         wm.resetSettings(); // Borra las credenciales guardadas y el portal de configuración
+         Serial.println("Credenciales borradas (WiFiManager).");
+         ESP.restart();
+      
+         ejecutado = true; // para que no se vuelva a ejecutar mientras siga presionado
+    }
+  } else {
+    // Si se suelta, reiniciamos estado (y permitimos volver a empezar)
+    ejecutado = false;
+  }
+
+  // Guardar estado para la siguiente iteración
+  estadoBotonAnterior = estadoBotonActual;
+ 
 }
 
 void assignPinsToObjects(int count) {
@@ -197,7 +249,7 @@ void WIFI_ini(){
     // it is a good practice to make sure your code sets wifi mode how you want it.
 
     //WiFiManager, Local intialization. Once its business is done, there is no need to keep it around
-    WiFiManager wm;
+    
 
     // reset settings - wipe stored credentials for testing
     // these are stored by the esp library
@@ -225,7 +277,7 @@ void WIFI_ini(){
 
 void check_mqttConn(){
 //TESTEAR SI FUNCIONA, VER QUE PASA SI SE CAE LA CON WIFI.
-  if(!res){
+  if(!WiFi.status() == WL_CONNECTED){
     Serial.print("\n\n\nConexion Wifi fallo, reinicio de dispositivo...");
     delay(15000);
     ESP.restart();
