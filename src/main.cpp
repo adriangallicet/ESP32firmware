@@ -21,8 +21,8 @@ void checkBTN();
 //VARS and library instances
 String dId = "7234"; //harcoding
 String _id = "687eac95e37a35affe53f0ea"; //hardcoding
-String webhook_endpoint = "http://192.168.1.20:3001/api/getdevicecredentials"; //endpoint para solicitar la config del dispositivo
-const char* mqtt_server = "192.168.1.20";
+String webhook_endpoint = "http://192.168.1.100:3001/api/getdevicecredentials"; //endpoint para solicitar la config del dispositivo
+const char* mqtt_server = "192.168.1.100";
 const char * broker_user = "dev";
 const char * broker_pass = "";
 WiFiClient espclient; //instancia del cliente de red
@@ -75,6 +75,24 @@ void loop() {
   
 }
 
+bool startConfigPortalAP() {
+  const char* ap_ssid = "AutoConfigAP";
+  const char* ap_pass = "password";
+
+  Serial.println("Iniciando portal de configuración AP temporal...");
+  // startConfigPortal devuelve true si el usuario terminó la configuración y el ESP conectó
+  bool started = wm.startConfigPortal(ap_ssid, ap_pass);
+
+  if (started) {
+    Serial.println("Portal de configuración cerrado. Intentando conectar con credenciales nuevas...");
+  } else {
+    Serial.println("No se pudo iniciar o finalizar portal de configuración.");
+  }
+  return started;
+}
+
+
+
 void checkBTN(){
     estadoBotonActual = digitalRead(botonPin);
 
@@ -90,14 +108,11 @@ void checkBTN(){
     unsigned long duracion = millis() - tPresionadoInicio;
     if (!ejecutado && duracion >= tiempoRequerido) {
       // Aquí va el código que quieres ejecutar al alcanzar 5 segundos
-        Serial.println("Botón presionado 5 segundos. Ejecuto código.");
+        
         // Borrar credenciales guardadas por WiFiManager.
         // WiFiManager almacena la configuración en el NVS/LittleFS según la plataforma.
          wm.resetSettings(); // Borra las credenciales guardadas y el portal de configuración
-         Serial.println("Credenciales borradas (WiFiManager).");
          ESP.restart();
-      
-         ejecutado = true; // para que no se vuelva a ejecutar mientras siga presionado
     }
   } else {
     // Si se suelta, reiniciamos estado (y permitimos volver a empezar)
@@ -245,46 +260,57 @@ void callback(char* topic, byte* payload, unsigned int lenght){
 
  bool res;
 void WIFI_ini(){
-  WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
-    // it is a good practice to make sure your code sets wifi mode how you want it.
+  WiFi.mode(WIFI_STA); // modo default explícito
 
-    //WiFiManager, Local intialization. Once its business is done, there is no need to keep it around
-    
+  // Intento inicial de conexión/configuración
+  bool connected = wm.autoConnect("AutoConnectAP","password"); 
 
-    // reset settings - wipe stored credentials for testing
-    // these are stored by the esp library
-   // wm.resetSettings();
+  if(connected){
+    Serial.println("Conectado a WiFi mediante AutoConnect");
+    return;
+  } else {
+    Serial.println("AutoConnect falló. Intentando portal de configuración AP temporal...");
 
-    // Automatically connect using saved credentials,
-    // if connection fails, it starts an access point with the specified name ( "AutoConnectAP"),
-    // if empty will auto generate SSID, if password is blank it will be anonymous AP (wm.autoConnect())
-    // then goes into a blocking loop awaiting configuration and will return success result
+    // Intentar AP temporal para reconfigurar credenciales
+    if (startConfigPortalAP()) {
+      // Después de que el usuario configure y cierre el portal, WM debería haber establecido
+      // nuevas credenciales y el ESP podrá intentar conectarse nuevamente.
+      // Espera breve para estabilizar la conexión
+      delay(1000);
 
-   
-    // res = wm.autoConnect(); // auto generated AP name from chipid
-    // res = wm.autoConnect("AutoConnectAP"); // anonymous ap
-    res = wm.autoConnect("AutoConnectAP","password"); // password protected ap
-
-    if(!res) {
-        Serial.println("Failed to connect");
-        // ESP.restart();
-    } 
-    else {
-        //if you get here you have connected to the WiFi    
-        Serial.println("connected...yeey :)");
+      // Intento rápido de reconectar con las nuevas credenciales proporcionadas a través del portal
+      // Nota: si el portal terminó exitosamente, wm.autoConnect suele funcionar sin necesidad de reiniciar.
+      if (wm.autoConnect("AutoConnectAP","password")) {
+        Serial.println("Conectado tras configuración en AP temporal.");
+        return;
+      } else {
+        Serial.println("Sin credenciales válidas tras AP temporal. Reiniciando...");
+        ESP.restart();
+      }
+    } else {
+      Serial.println("No se pudo iniciar AP temporal. Reiniciando...");
+      ESP.restart();
     }
+  }
 }
 
+unsigned long lastWiFiAttempt = 0;
 void check_mqttConn(){
-//TESTEAR SI FUNCIONA, VER QUE PASA SI SE CAE LA CON WIFI.
-  if(!WiFi.status() == WL_CONNECTED){
-    Serial.print("\n\n\nConexion Wifi fallo, reinicio de dispositivo...");
-    delay(15000);
-    ESP.restart();
-  };
+// 1) Verificar conectividad WiFi antes de cualquier operación de red
+//el proceso de reconexion lo maneja la propia libreria WiFi
+  if (WiFi.status() != WL_CONNECTED) {
+    unsigned long now = millis();
+   if (now - lastWiFiAttempt >= 10000) {
+      Serial.println("\nWiFi caido. Intento de reconexión...");
+      lastWiFiAttempt = now;
+    }
+    return;
+  }
+
   if(!client.connected()){
     long now = millis(); // tiempo en ms desde que inicio la placa
     if(now - lastReconnAtt > 5000){ //logica para evitar codigo bloqueante con los delay()
+      Serial.println("\nMQTT conn caida. Intento de reconexión...");
       lastReconnAtt = millis();
       if(reconnect()){
         lastReconnAtt = 0;
