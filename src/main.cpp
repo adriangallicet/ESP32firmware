@@ -51,7 +51,6 @@ unsigned long tPresionadoInicio = 0;
 //PINS
 #define botonPin 2
 int timeout = 240;
-//const int availablePins[] = { 4, 5, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33 }; //14
 const int availablePins[] = { 4, 16, 17, 5, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33 }; //14
 const int NUM_AVAILABLE_PINS = sizeof(availablePins) / sizeof(availablePins[0]);
 
@@ -208,14 +207,12 @@ bool getDeviceCredentials(){
 }
 
 bool reconnect(){
-  //en caso de que haya algun tipo de error obteniendo la config. del device desde backend, espera de 10sec y restart la placa
-  if(!getDeviceCredentials()){
-    Serial.println("RESTART EN 10 SEC");
-    delay(10000);
-    ESP.restart();
+  if (!mqtt_data_doc.isNull()) {
+      Serial.println("ya se recibio la config. no es necesario volver a pedirla");
+    }
+  else if(!getDeviceCredentials()){
+    return false;
   }
-  //
-
   //Set Mqtt sv
   client.setServer(mqtt_server, 1883);
   Serial.print("\n\n\nIntentando conexion Mqtt");
@@ -301,7 +298,7 @@ void check_mqttConn(){
   if (WiFi.status() != WL_CONNECTED) {
     unsigned long now = millis();
    if (now - lastWiFiAttempt >= 10000) {
-      Serial.println("\nWiFi caido. Intento de reconexión...");
+      Serial.println("\nWiFi caido. Intento de reconexion...");
       lastWiFiAttempt = now;
     }
     return;
@@ -310,7 +307,7 @@ void check_mqttConn(){
   if(!client.connected()){
     long now = millis(); // tiempo en ms desde que inicio la placa
     if(now - lastReconnAtt > 5000){ //logica para evitar codigo bloqueante con los delay()
-      Serial.println("\nMQTT conn caida. Intento de reconexión...");
+      Serial.println("\nIntentando conexion MQTT");
       lastReconnAtt = millis();
       if(reconnect()){
         lastReconnAtt = 0;
