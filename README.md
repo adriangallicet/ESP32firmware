@@ -1,6 +1,4 @@
-<div style="border:1px solid #eee; padding:8px; text-align:left;"> <a href="#detalles-1">Ir a Detalles 1</a> <a href="#detalles-2" style="margin-left:8px;">Ir a Detalles 2</a> <a href="#detalles-3" style="margin-left:8px;">Ir a Detalles 3</a> </div>
-<div align="center">
-  <h1>ESP32 firmware -</h1>
+ <h1>ESP32 firmware -</h1>
   <p dir="auto">Base en ESP32, testeado en la placa de desarrollo NodeMCU-32S. Este desarrollo forma de un sistema prototipo, basado en IoT, para dar solucion a una problemática puntual de una empresa en particular </p>
   <img src="" alt="Diagrama" style="max-width: 600px; width: 80%;">
 </div>
