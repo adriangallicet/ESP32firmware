@@ -75,8 +75,8 @@ checkBTN(): detecta pulsaciones mantenidas del botón durante 5 segundos. Dado e
 checkConectividad(): como su nombre indica, su trabajo es asegurar las conexiones, tanto de red como cliente MQTT. A su vez, se encarga de recibir la configuración del dispositivo mediante HTTP desde base de datos y llevarla a cabo, manejo de mensajes MQTT y accionar sobre los relés.
   </p>
   <div align="center">
-    <img src="images/diagramaSetup.jpg" alt="Diagrama1" style="max-width: 600px; width: 100%;">
-     <img src="images/diagramaCheckBTN.jpg" alt="Diagrama2" style="max-width: 600px; width: 100%;">
-      <img src="images/diagramaCheckConectividad.jpg" alt="Diagrama3" style="max-width: 600px; width: 100%;">
+    <img src="images/diagramaSetup.jpg" alt="Diagrama1" style="max-width: 600px; width: 80%;">
+     <img src="images/diagramaCheckBTN.jpg" alt="Diagrama2" style="max-width: 600px; width: 80%;">
+      <img src="images/diagramaCheckConectividad.jpg" alt="Diagrama3" style="max-width: 600px; width: 80%;">
    </div>
   </section>
