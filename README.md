@@ -1,10 +1,12 @@
  <h1>ESP32 firmware -</h1>
   <p dir="auto">Base en ESP32, testeado en la placa de desarrollo NodeMCU-32S. Este desarrollo forma parte de un sistema<br> prototipo, basado en IoT, para dar solucion a una problemática puntual de una empresa en particular.
-  su tarea<br> es recibir mensajes mediante protocolo Mqtt y actuar sobre los controladores en base a él, notificando al<br> emisor (API) una vez concluída su labor.
+  su tarea<br> es recibir mensajes mediante protocolo Mqtt y actuar sobre los controladores en base a él, notificando al<br> emisor una vez concluída su labor.
   Si desea comprender el código, puede apoyarse en los  <a href="#diagramas">
         diagramas de flujo
       </a></p> 
-  <img src="images/prototipo.jpeg" alt="Diagrama" style="max-width: 600px; width: 80%;">
+  <img src="images/cajaEstanca.jpeg" alt="Diagrama" style="max-width: 600px; width: 80%;">
+  <img src="images/cajaEstancaVfront.jpeg" alt="Diagrama" style="max-width: 600px; width: 80%;">
+  <img src="images/cajaEstancaVint.jpeg" alt="Diagrama" style="max-width: 600px; width: 80%;">
 </div>
 
 <hr >
