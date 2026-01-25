@@ -54,7 +54,7 @@ unsigned long tPresionadoInicio = 0;
 //PINS
 #define botonPin 32
 int timeout = 240;
-const int availablePins[] = { 4, 16, 17, 18, 19, 21, 22, 23, 13, 14, 27, 25, 33 }; //13
+const int availablePins[] = { 23, 22, 21, 19, 18, 17, 16, 4, 13, 14, 27, 25, 33 }; //13
 const int NUM_AVAILABLE_PINS = sizeof(availablePins) / sizeof(availablePins[0]);
 
 int leds [NUM_AVAILABLE_PINS];
