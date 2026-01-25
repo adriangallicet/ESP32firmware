@@ -7,6 +7,7 @@
   <img src="images/cajaEstanca.jpeg" alt="Diagrama" style="max-width: 600px; width: 80%;">
   <img src="images/cajaEstancaVfront.jpeg" alt="Diagrama" style="max-width: 600px; width: 80%;">
   <img src="images/cajaEstancaVint.jpeg" alt="Diagrama" style="max-width: 600px; width: 80%;">
+  <img src="images/conexionado2.jpg" alt="Diagrama" style="max-width: 600px; width: 80%;">
 </div>
 
 <hr >
