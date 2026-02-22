@@ -4,6 +4,11 @@
   Si desea comprender el código, puede apoyarse en los  <a href="#diagramas">
         diagramas de flujo
       </a></p> 
+  El documento completo del trabajo, donde se detalla el diseño conceptual y la arquitectura general del sistema<br> se encuentra disponible en:
+
+🔗 https://github.com/adriangallicet/tesis-plataforma-iot
+
+Se recomienda su lectura para comprender el enfoque integral del proyecto y su marco teórico.
   <img src="images/cajaEstanca.jpeg" alt="Diagrama" style="max-width: 600px; width: 80%;">
   <img src="images/cajaEstancaVfront.jpeg" alt="Diagrama" style="max-width: 600px; width: 80%;">
   <img src="images/cajaEstancaVint.jpeg" alt="Diagrama" style="max-width: 600px; width: 80%;">
