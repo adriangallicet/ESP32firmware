@@ -4,18 +4,16 @@
   Si desea comprender el código, puede apoyarse en los  <a href="#diagramas">
         diagramas de flujo
       </a></p> 
-  El documento completo del trabajo, donde se detalla el diseño conceptual y la arquitectura general del sistema<br> se encuentra disponible en:
-
-🔗 https://github.com/adriangallicet/tesis-plataforma-iot
-
-Se recomienda su lectura para comprender el enfoque integral del proyecto y su marco teórico.
+  <p>Este repositorio forma parte del proyecto **Plataforma IoT**, desarrollado como trabajo de tesis de Ingeniería<br> en Telecomunicaciones.
+El repositorio principal del proyecto funciona como punto de acceso a la documentación<br> general y a los distintos componentes del sistema:
+🔗 https://github.com/adriangallicet/tesis-plataforma-iot</p> 
   <img src="images/cajaEstanca.jpeg" alt="Diagrama" style="max-width: 600px; width: 80%;">
   <img src="images/cajaEstancaVfront.jpeg" alt="Diagrama" style="max-width: 600px; width: 80%;">
   <img src="images/cajaEstancaVint.jpeg" alt="Diagrama" style="max-width: 600px; width: 80%;">
   <img src="images/conexionado2.jpg" alt="Diagrama" style="max-width: 600px; width: 80%;">
 </div>
 
-<hr >
+
  <h2>Comunicacion con el sistema</h1>
   <p dir="auto">El dispositivo es solo una parte del sistema y, para llevar a cabo sus tareas, necesita comunicarse con las demás<br> entidades.
     El siguiente esquema muestra de manera resumida las relaciones llevadas a cabo. <br>Haz clic en los enlaces para ver más detalles. </p>
